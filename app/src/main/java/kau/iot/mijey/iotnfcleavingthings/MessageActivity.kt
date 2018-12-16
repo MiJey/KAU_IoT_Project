@@ -154,10 +154,10 @@ class MessageActivity : AppCompatActivity() {
         }
     }
 
-    private fun postMsg() {
+    private fun postMsg(nfcTag: String = "nothing", doGetLastMsg: Boolean = false) {
         val msg = Message()
         msg.sdid = ArtikConfig.DEVICE_ID
-        msg.data["things"] = "test 2018-12-17 00:10"
+        msg.data["things"] = nfcTag
 
         try {
             mMessagesApi.sendMessageAsync(msg, object : ApiCallback<MessageIDEnvelope> {
@@ -167,6 +167,7 @@ class MessageActivity : AppCompatActivity() {
 
                 override fun onSuccess(result: MessageIDEnvelope, i: Int, stringListMap: Map<String, List<String>>) {
                     updateTextViewOnUIThread(send_msg_response_text_view, "Response: ${result.data}")
+                    if (doGetLastMsg) getLatestMsg()
                 }
 
                 override fun onUploadProgress(bytes: Long, contentLen: Long, done: Boolean) {}
@@ -224,7 +225,9 @@ class MessageActivity : AppCompatActivity() {
             Log.e("UnsupportedEncoding", e.toString())
         }
 
+        // NFC 태그를 읽으면 Artik Cloud로 보내고 받아옴
         nfc_read_text_view.text = "NFC Content: $text"
+        postMsg(text, true)
     }
 
     /** Write to NFC tag **/
