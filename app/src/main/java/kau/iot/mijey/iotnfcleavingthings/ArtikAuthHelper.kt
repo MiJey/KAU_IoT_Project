@@ -16,8 +16,10 @@ class ArtikAuthHelper {
     companion object {
         const val ARTIKCLOUD_AUTHORIZE_URI = "https://accounts.artik.cloud/signin"
         const val ARTIKCLOUD_TOKEN_URI = "https://accounts.artik.cloud/token"
-        const val INTENT_ARTIKCLOUD_AUTHORIZATION_RESPONSE = "kau.iot.mijey.iotnfcleavingthings.ARTIKCLOUD_AUTHORIZATION_RESPONSE"
         const val USED_INTENT = "USED_INTENT"
+
+        // 매니페스트에서 <action android:name="kau.iot.mijey.iotnfcleavingthings.ARTIKCLOUD_AUTHORIZATION_RESPONSE"/> 수정해야 함
+        const val INTENT_ARTIKCLOUD_AUTHORIZATION_RESPONSE = "kau.iot.mijey.iotnfcleavingthings.ARTIKCLOUD_AUTHORIZATION_RESPONSE"
     }
 
     fun createAuthorizationRequest(): AuthorizationRequest {

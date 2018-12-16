@@ -12,37 +12,37 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
         <TextView
-                android:id="@+id/welcome"
+                android:id="@+id/welcome_text_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/welcome_txt" />
 
         <Button
-                android:id="@+id/send_btn"
+                android:id="@+id/send_msg_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/send_btn_txt" />
 
         <TextView
-                android:id="@+id/sendmsg_response"
+                android:id="@+id/send_msg_response_text_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/sendmsg_response" />
 
         <Button
-                android:id="@+id/getlatest_btn"
+                android:id="@+id/get_msg_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/getlatest_btn_txt" />
 
         <TextView
-                android:id="@+id/getlatest_response_mid"
+                android:id="@+id/get_msg_response_id_text_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/getlatest_response_mid" />
 
         <TextView
-                android:id="@+id/getlatest_response_mdata"
+                android:id="@+id/get_msg_response_data_text_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/getlatest_response_mdata" />

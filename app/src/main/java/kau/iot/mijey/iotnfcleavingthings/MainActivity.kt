@@ -20,9 +20,9 @@ import net.openid.appauth.*
  */
 
 class MainActivity : AppCompatActivity() {
-    val ARTIK_TAG = "ArtikAuthTest"
-    lateinit var mAuthorizationService: AuthorizationService
-    lateinit var mAuthStateDAL: ArtikAuthStateDAL
+    private val ARTIK_TAG = "ArtikAuthTest"
+    private lateinit var mAuthorizationService: AuthorizationService
+    private lateinit var mAuthStateDAL: ArtikAuthStateDAL
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
