@@ -2,170 +2,147 @@ package kau.iot.mijey.iotnfcleavingthings
 
 import android.app.PendingIntent
 import android.content.Intent
-import android.content.IntentFilter
-import android.nfc.*
-import android.nfc.tech.Ndef
 import android.os.Bundle
+import android.os.Message
+import android.support.customtabs.CustomTabsIntent
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
-import java.io.IOException
-import java.io.UnsupportedEncodingException
+import net.openid.appauth.*
 
 /**
- * Created by Yeji on 2018-12-16.
+ * Crated by Yeji on 2018-12-16.
  *
- * reference: https://www.codexpedia.com/android/android-nfc-read-and-write-example/
+ * reference:
+ * https://developer.artik.cloud/documentation/tutorials/your-first-android-app.html
+ * https://www.codexpedia.com/android/android-nfc-read-and-write-example/
  */
 
 class MainActivity : AppCompatActivity() {
-    private val ERROR_DETECTED = "No NFC tag detected!"
-    private val WRITE_SUCCESS = "Text written to the NFC tag successfully!"
-    private val WRITE_ERROR = "Error during writing, is the NFC tag close enough to your device?"
-
-    private lateinit var nfcAdapter: NfcAdapter
-    private lateinit var pendingIntent: PendingIntent
-    private lateinit var writeTagFilters: Array<IntentFilter>
-
-    private var myTag: Tag? = null
-    private var writeMode = false
+    val ARTIK_TAG = "ArtikAuthTest"
+    lateinit var mAuthorizationService: AuthorizationService
+    lateinit var mAuthStateDAL: ArtikAuthStateDAL
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        nfc_write_button.setOnClickListener {
+        mAuthorizationService = AuthorizationService(this)
+        mAuthStateDAL = ArtikAuthStateDAL(this)
+
+        artik_login_button.setOnClickListener {
             try {
-                if (myTag == null) {
-                    Toast.makeText(this, ERROR_DETECTED, Toast.LENGTH_SHORT).show()
-                } else {
-                    write(nfc_write_edit_text.text.toString(), myTag!!)
-                    Toast.makeText(this, WRITE_SUCCESS, Toast.LENGTH_SHORT).show()
-                }
-            }catch (e: IOException) {
-                Toast.makeText(this, WRITE_ERROR, Toast.LENGTH_SHORT).show()
+                doAuth()
+            } catch (e: Exception) {
+                Log.d(ARTIK_TAG, "doAuth exception")
                 e.printStackTrace()
-            } catch (e: FormatException) {
-                Toast.makeText(this, WRITE_ERROR, Toast.LENGTH_SHORT).show()
-                e.printStackTrace();
             }
         }
 
-        nfcAdapter = NfcAdapter.getDefaultAdapter(this)
-
-        if (nfcAdapter == null) {
-            // Stop here, we definitely need NFC
-            Toast.makeText(this, "This device doesn't support NFC.", Toast.LENGTH_SHORT).show()
-            finish()
-        }
-
-        readFromIntent(intent)
-        pendingIntent = PendingIntent.getActivity(this, 0, Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0)
-        val tagDetected = IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED)
-        tagDetected.addCategory(Intent.CATEGORY_DEFAULT)
-        writeTagFilters = arrayOf(tagDetected)
-    }
-
-    /** Read from NFC tag **/
-    private fun readFromIntent(intent: Intent) {
-        val action = intent.action
-        if (NfcAdapter.ACTION_TAG_DISCOVERED == action
-            || NfcAdapter.ACTION_TECH_DISCOVERED == action
-            || NfcAdapter.ACTION_NDEF_DISCOVERED == action) {
-            val rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
-            var msgs: Array<NdefMessage?>? = null
-
-            if (rawMsgs != null) {
-                msgs = arrayOfNulls(rawMsgs.size)
-                for (i in rawMsgs.indices)
-                    msgs[i] = rawMsgs[i] as NdefMessage
-            }
-
-            buildTagViews(msgs)
+        nfc_activity_button.setOnClickListener {
+            val intent = Intent(this, NFCActivity::class.java)
+            startActivity(intent)
         }
     }
 
-    private fun buildTagViews(msgs: Array<NdefMessage?>?) {
-        if (msgs == null || msgs.isEmpty()) return
-        if (msgs[0] == null) return
+    /** Artik authentication **/
+    // File OAuth call with Authorization Code with PKCE method
+    // https://developer.artik.cloud/documentation/getting-started/authentication.html#authorization-code-with-pkce-method
+    private fun doAuth() {
+        Log.d(ARTIK_TAG, "doAuth Start")
+        val authorizationRequest = ArtikAuthHelper().createAuthorizationRequest()
+        val authorizationIntent = PendingIntent.getActivity(
+            this,
+            authorizationRequest.hashCode(),
+            Intent(ArtikAuthHelper.INTENT_ARTIKCLOUD_AUTHORIZATION_RESPONSE, null, this, MainActivity::class.java),
+            0)
+        Log.d(ARTIK_TAG, "doAuth authorizationIntent: $authorizationIntent")
 
-        var text = ""
-        val payload = msgs[0]!!.records[0].payload
-        val textEncoding = if (payload[0].toInt() and 128 == 0) Charsets.UTF_8 else Charsets.UTF_16 // Get the Text Encoding
-        val languageCodeLength = payload[0].toInt() and 51 // Get the Language Code, e.g. "en"
+        /* request sample with custom tabs */
+        val builder = CustomTabsIntent.Builder()
+        val customTabsIntent = builder.build()
 
-        try {
-            // Get the Text
-            text = String(payload, languageCodeLength + 1, payload.size - languageCodeLength - 1, textEncoding)
-        } catch (e: UnsupportedEncodingException) {
-            Log.e("UnsupportedEncoding", e.toString())
-        }
-
-        nfc_read_text_view.text = "NFC Content: $text"
+        mAuthorizationService.performAuthorizationRequest(authorizationRequest, authorizationIntent, customTabsIntent)
+        Log.d(ARTIK_TAG, "doAuth end")
     }
 
-    /** Write to NFC tag **/
-    @Throws(IOException::class, FormatException::class)
-    private fun write(text: String, tag: Tag) {
-        val records = arrayOf(createRecord(text))
-        val message = NdefMessage(records)
-        val ndef = Ndef.get(tag)    // Get an instance of Ndef for the tag.
-
-        ndef.connect()  // Enable I/O
-        ndef.writeNdefMessage(message)  // Write the message
-        ndef.close()    // Close the connection
-    }
-
-    @Throws(UnsupportedEncodingException::class)
-    private fun createRecord(text: String): NdefRecord {
-        val lang = "en"
-        val textBytes = text.toByteArray()
-        val langBytes = lang.toByteArray(charset("US-ASCII"))
-        val langLength = langBytes.size
-        val textLength = textBytes.size
-        val payload = ByteArray(1 + langLength + textLength)
-
-        // set status byte (see NDEF spec for actual bits)
-        payload[0] = langLength.toByte()
-
-        // copy langbytes and textbytes into payload
-        System.arraycopy(langBytes, 0, payload, 1, langLength)
-        System.arraycopy(textBytes, 0, payload, 1 + langLength, textLength)
-
-        return NdefRecord(NdefRecord.TNF_WELL_KNOWN, NdefRecord.RTD_TEXT, ByteArray(0), payload)
+    override fun onStart() {
+        super.onStart()
+        checkIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        if (intent == null) return
+        checkIntent(intent)
+    }
 
-        setIntent(intent)
-        readFromIntent(intent)
-        if (NfcAdapter.ACTION_TAG_DISCOVERED == intent.action) {
-            myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
+    private fun checkIntent(intent: Intent?) {
+        if (intent != null) {
+            val action = intent.action
+            when (action) {
+                ArtikAuthHelper.INTENT_ARTIKCLOUD_AUTHORIZATION_RESPONSE -> {
+                    Log.d(ARTIK_TAG, "checkIntent action = " + action + " intent.hasExtra(USED_INTENT) = " + intent.hasExtra(ArtikAuthHelper.USED_INTENT))
+                    if (!intent.hasExtra(ArtikAuthHelper.USED_INTENT)) {
+                        handleAuthorizationResponse(intent)
+                        intent.putExtra(ArtikAuthHelper.USED_INTENT, true)
+                    }
+                }
+                else -> Log.d(ARTIK_TAG, "checkIntent action = " + action!!)
+            }// do nothing
+        } else {
+            Log.d(ARTIK_TAG, "checkIntent intent is null!")
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        writeModeOff()
+    private fun handleAuthorizationResponse(intent: Intent) {
+        val response = AuthorizationResponse.fromIntent(intent)
+        val error = AuthorizationException.fromIntent(intent)
+
+        Log.d(ARTIK_TAG, "Entering handleAuthorizationResponse with response from Intent = " + response!!.jsonSerialize().toString())
+
+        if (response != null) {
+            if (response.authorizationCode != null) { // Authorization Code method: succeeded to get code
+                val authState = AuthState(response, error)
+                Log.d(ARTIK_TAG, "Received code = " + response.authorizationCode + "\n make another call to get token ...")
+
+                // File 2nd call to get the token
+                mAuthorizationService.performTokenRequest(
+                    response.createTokenExchangeRequest()
+                ) { tokenResponse, exception ->
+                    if (tokenResponse != null) {
+                        authState.update(tokenResponse, exception)
+                        mAuthStateDAL.writeAuthState(authState) //store into persistent storage for use later
+                        val text = String.format("Received token response [%s]", tokenResponse.jsonSerializeString())
+                        Log.d(ARTIK_TAG, text)
+                        startMessageActivity()
+                    } else {
+                        val context = applicationContext
+                        Log.d(ARTIK_TAG, "Token Exchange failed", exception)
+                        val text = "Token Exchange failed"
+                        val duration = Toast.LENGTH_LONG
+                        val toast = Toast.makeText(context, text, duration)
+                        toast.show()
+                    }
+                }
+            } else { // come here w/o authorization code. For example, signup finish and user clicks "Back to login"
+                Log.d(ARTIK_TAG, "additionalParameter = " + response.additionalParameters.toString())
+
+                if (response.additionalParameters["status"].equals("login_request", ignoreCase = true)) {
+                    // ARTIK Cloud instructs the app to display a sign-in form
+                    doAuth()
+                } else {
+                    Log.d(ARTIK_TAG, response.jsonSerialize().toString())
+                }
+            }
+
+        } else {
+            Log.d(ARTIK_TAG, "Authorization Response is null ")
+            Log.d(ARTIK_TAG, "Authorization Exception = " + error!!)
+        }
     }
 
-    override fun onResume() {
-        super.onResume()
-        writeModeOn()
-    }
-
-    /** Enable write **/
-    private fun writeModeOn() {
-        writeMode = true
-        nfcAdapter.enableForegroundDispatch(this, pendingIntent, writeTagFilters, null)
-    }
-
-    /** Disable write **/
-    private fun writeModeOff() {
-        writeMode = false
-        nfcAdapter.disableForegroundDispatch(this)
+    private fun startMessageActivity() {
+        val msgActivityIntent = Intent(this, MessageActivity::class.java)
+        startActivity(msgActivityIntent)
     }
 }

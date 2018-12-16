@@ -2,8 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="kau.iot.mijey.iotnfcleavingthings">
 
-    <uses-permission android:name="android.permission.NFC" />
-    <uses-feature android:name="android.hardware.nfc" android:required="true" />
+    <uses-permission android:name="android.permission.NFC"/>
+
+    <uses-feature
+            android:name="android.hardware.nfc"
+            android:required="true"/>
 
     <application
             android:allowBackup="true"
@@ -16,17 +19,43 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <action android:name="android.intent.action.VIEW"/>
+                <action android:name="kau.iot.mijey.iotnfcleavingthings.ARTIKCLOUD_AUTHORIZATION_RESPONSE"/>
+
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
+        </activity>
+
+        <activity android:name=".NFCActivity">
             <intent-filter>
-                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
+                <action android:name="android.nfc.action.NDEF_DISCOVERED"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
             </intent-filter>
+
             <meta-data
                     android:name="android.nfc.action.TECH_DISCOVERED"
-                    android:resource="@xml/nfc_tech_filter" />
+                    android:resource="@xml/nfc_tech_filter"/>
+        </activity>
+
+        <activity android:name=".MessageActivity">
+        </activity>
+
+        <activity
+                android:name="net.openid.appauth.RedirectUriReceiverActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+
+                <!--
+                 Make sure these two intent filter fields respects "AUTH REDIRECT URL"
+                 of your application set up at the developer.artik.cloud.
+                 For example, if REDIRECT URL is "cloud.artik.example.oauth://oauth2callback",
+                 the intent-filter fields looks like the following
+                -->
+                <data android:scheme="kau.iot.mijey.iotnfcleavingthings" android:host="oauth2callback"/>
+            </intent-filter>
         </activity>
     </application>
 

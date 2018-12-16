@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">IoTNFCLeavingThings</string>
+
+    <!--  Login activity -->
+    <string name="hello_world">Please login to ARTIK Cloud</string>
+    <string name="click">login</string>
+
+    <!-- Message activity -->
+    <string name="play_with_messages">Play with ARTIK Cloud</string>
+    <string name="welcome_txt">Welcome </string>
+    <string name="send_btn_txt">send a message</string>
+    <string name="sendmsg_response">Response </string>
+    <string name="getlatest_btn_txt">Get the latest message</string>
+    <string name="getlatest_response_mid">id </string>
+    <string name="getlatest_response_mdata">data </string>
 </resources>
