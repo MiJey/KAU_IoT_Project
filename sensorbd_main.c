@@ -214,9 +214,11 @@ void onMessage(void *client, mqtt_msg_t *msg) {
 	if (strncmp(strParamValue, "5", 1) == 0) {	// "detection_number":5 (거실->화장실)
 		printf("palor -> toilet\n");
 		// TV 화면을 거실에서 화장실로 옮김
+		lcd_toilet_init("MBC", "123");
 	} else if (strncmp(strParamValue, "6", 1) == 0) {	// "detection_number":6 (화장실->거실)
 		printf("toilet -> palor\n");
 		// TV 화면을 화장실에서 거실로 옮김
+		lcd_palor_init("MBC", "124");
 	}
 
 	cJSON_Delete(jsonMsg);
@@ -279,17 +281,6 @@ int main(int argc, FAR char *argv[])
 int sensorbd_main(int argc, FAR char *argv[])
 #endif
 {
-
-	int a0 = 53, reset = 54;
-	if(sh1106_init(0, a0, reset)) { // port, A0, reset
-			printf("Error: sh1106 initialization \n");
-			return 0;
-	}
-
-	sh1106_write_string(10 ,0, "Current Room");
-	sh1106_write_string(10 ,1, "Channel Name");
-   	sh1106_write_string(10 ,2, "Channel Count");
-
 	//-------------------------- Connection -----------------------------
 	printf("-------------------- Start Connection --------------------\n");
 	bool wifiConnected = false;

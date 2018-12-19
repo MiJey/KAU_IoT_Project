@@ -420,10 +420,10 @@ SH1106_RET sh1106_init(uint8_t port, uint8_t dc_pin, uint8_t reset_pin)
 	const int bits = 8;
 	const int conf = 0;
 
-	if(self->is_init)
-	{
-		return SH1106_OK;
-	}
+//	if(self->is_init)
+//	{
+//		return SH1106_OK;
+//	}
 
 	if(port > SPI_MAX)
 	{
