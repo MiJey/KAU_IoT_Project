@@ -8,8 +8,8 @@
 #define SLSI_WIFI_SECURITY_OPEN     "open"
 #define SLSI_WIFI_SECURITY_WPA2_AES "wpa2_aes"
 
-#define SSID "KAU-Guest"	// 테스트용
-#define PSK  NULL	// 비밀번호 없음
+#define SSID "KAU-Guest"
+#define PSK  NULL
 
 slsi_security_config_t *getSecurityConfig(char *sec_type,
         char *psk, WiFi_InterFace_ID_t mode);

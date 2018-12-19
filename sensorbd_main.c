@@ -217,27 +217,11 @@ void onMessage(void *client, mqtt_msg_t *msg) {
 		strParamValue = cJSON_Print(param1);
 		printf("action name: %s, param value: %s\n", strActName, strParamValue);
 
-		//strcpy(channel_name, strParamValue);
+		// ì•ë’¤ë¡œ ë”°ì˜´í‘œ ë¶™ëŠ”ê±° ì œê±°í•´ì•¼ í•˜ëŠ”ë° Cì–¸ì–´ ë¬¸ìì—´ ë‹¤ë£¨ê¸° ë„ˆë¬´ ê·€ì°®ì•„ì„œ ì±„ë„ëª…ì„ 3ê¸€ì(SBS, KBS, MBC ë“±)ë¼ê³  ê°€ì •í•˜ê³  í•¨
 		channel_name[0] = strParamValue[1];
 		channel_name[1] = strParamValue[2];
 		channel_name[2] = strParamValue[3];
 		channel_name[3] = '\0';
-
-		// sub ¹ŞÀº°É ´Ù½Ã pubÀ¸·Î º¸³¿
-		char buf[40];
-		sprintf(buf, "{\"tv_channel_name\" : \"%s\"}", channel_name);
-		printf("pub_data_name Value: %s\n", channel_name);
-
-		mqtt_msg_t message;
-		message.payload = (char*) buf;
-		message.payload_len = 12;
-		message.topic = strTopicMsg_pub;
-		message.qos = 0;
-		message.retain = 0;
-
-		int ret = mqtt_publish(pClientHandle_pub, message.topic,
-				(char*) message.payload, message.payload_len, message.qos,
-				message.retain);
 
 		lcd_channel_name_display(channel_name);
 
@@ -257,13 +241,13 @@ void onMessage(void *client, mqtt_msg_t *msg) {
 		strParamValue = cJSON_Print(param1);
 		printf("action name: %s, param value: %s\n", strActName, strParamValue);
 
-		if (strncmp(strParamValue, "5", 1) == 0) {// "detection_number":5 (°Å½Ç->È­Àå½Ç)
+		if (strncmp(strParamValue, "5", 1) == 0) {// "detection_number":5 (ï¿½Å½ï¿½->È­ï¿½ï¿½ï¿½)
 			printf("palor -> toilet\n");
-			// TV È­¸éÀ» °Å½Ç¿¡¼­ È­Àå½Ç·Î ¿Å±è
+			// TV ê±°ì‹¤ì—ì„œ í™”ì¥ì‹¤ë¡œ ê°
 			lcd_toilet_init(channel_name, channel_count);
-		} else if (strncmp(strParamValue, "6", 1) == 0) {// "detection_number":6 (È­Àå½Ç->°Å½Ç)
+		} else if (strncmp(strParamValue, "6", 1) == 0) {// "detection_number":6 (È­ï¿½ï¿½ï¿½->ï¿½Å½ï¿½)
 			printf("toilet -> palor\n");
-			// TV È­¸éÀ» È­Àå½Ç¿¡¼­ °Å½Ç·Î ¿Å±è
+			// TV í™”ì¥ì‹¤ì—ì„œ ê±°ì‹¤ë¡œ ê°
 			lcd_palor_init(channel_name, channel_count);
 		}
 	}
@@ -501,67 +485,5 @@ int sensorbd_main(int argc, FAR char *argv[])
 			break;
 		}
 	}
-
 	printf("-------------------- End Subscribe Conn. --------------------\n");
-
-	/*
-	 printf("-------------------- Start Publish Data --------------------\n");
-	 while (1) {
-
-	 // channel name
-	 char buf[40];
-	 char pub_data_name[] = "qqq";
-	 sprintf(buf, "{\"tv_channel_name\" : \"%s\"}", pub_data_name);
-	 printf("pub_data_name Value: %s\n", pub_data_name);
-
-	 mqtt_msg_t message;
-	 message.payload = (char*) buf;
-	 message.payload_len = strlen(buf);
-	 message.topic = strTopicMsg_pub;
-	 message.qos = 0;
-	 message.retain = 0;
-
-	 ret = mqtt_publish(pClientHandle_pub, message.topic,
-	 (char*) message.payload, message.payload_len, message.qos,
-	 message.retain);
-
-	 if (ret < 0) {
-	 printf("Error publishing name\n");
-	 } else {
-	 printf("Success publishing name\n");
-	 break;
-	 }
-
-	 up_mdelay(100);
-	 }
-
-	 while (1) {
-	 // channel count
-	 char buf[40];
-	 int pub_data = 548;
-	 sprintf(buf, "{\"tv_channel_count\" : %d}", pub_data);
-	 printf("Published Value: %d\n", pub_data);
-
-	 mqtt_msg_t message;
-	 message.payload = (char*) buf;
-	 message.payload_len = strlen(buf);
-	 message.topic = strTopicMsg_pub;
-	 message.qos = 0;
-	 message.retain = 0;
-
-	 ret = mqtt_publish(pClientHandle_pub, message.topic,
-	 (char*) message.payload, message.payload_len, message.qos,
-	 message.retain);
-
-	 if (ret < 0) {
-	 printf("Error publishing count\n");
-	 } else {
-	 printf("Success publishing count\n");
-	 break;
-	 }
-
-	 up_mdelay(100);
-	 }
-	 printf("-------------------- End Publish Data --------------------\n");
-	 */
 }

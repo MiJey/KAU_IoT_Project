@@ -420,6 +420,7 @@ SH1106_RET sh1106_init(uint8_t port, uint8_t dc_pin, uint8_t reset_pin)
 	const int bits = 8;
 	const int conf = 0;
 
+//yeji: 재실감지 될 때 init하는데 같은 번호여도 그냥 init되게 함
 //	if(self->is_init)
 //	{
 //		return SH1106_OK;
