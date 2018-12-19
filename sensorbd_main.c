@@ -235,20 +235,20 @@ void onMessage(void *client, mqtt_msg_t *msg) {
 		lcd_channel_count_display(strParamValue);
 
 	} else if (strncmp(strActName, "\"detection_number\"", 18) == 0) {
-		// 5 : palor -> toilet
-		// 6 : toilet -> palor
+		// 5 : livingroom -> toilet
+		// 6 : toilet -> livingroom
 		cJSON *param1 = cJSON_GetObjectItem(actParams, "detection_number");	// "detection_number":5
 		strParamValue = cJSON_Print(param1);
 		printf("action name: %s, param value: %s\n", strActName, strParamValue);
 
-		if (strncmp(strParamValue, "5", 1) == 0) {// "detection_number":5 (�Ž�->ȭ���)
-			printf("palor -> toilet\n");
+		if (strncmp(strParamValue, "5", 1) == 0) {// "detection_number":5
+			printf("livingroom -> toilet\n");
 			// TV 거실에서 화장실로 감
 			lcd_toilet_init(channel_name, channel_count);
-		} else if (strncmp(strParamValue, "6", 1) == 0) {// "detection_number":6 (ȭ���->�Ž�)
-			printf("toilet -> palor\n");
+		} else if (strncmp(strParamValue, "6", 1) == 0) {// "detection_number":6
+			printf("toilet -> livingroom\n");
 			// TV 화장실에서 거실로 감
-			lcd_palor_init(channel_name, channel_count);
+			lcd_livingroom_init(channel_name, channel_count);
 		}
 	}
 

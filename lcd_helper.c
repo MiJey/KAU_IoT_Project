@@ -3,22 +3,22 @@
 #include <tinyara/gpio.h>
 #include "sh1106.h"
 
-int lcd_palor_init(char *channel_name, char *channel_count) {
+int lcd_livingroom_init(char *channel_name, char *channel_count) {
 	// lcd toilet init
 	int code = sh1106_clear();
 	if (code == 0 || code == 3) {	// OK or NOT_INITIALIZED
-	// lcd palor init --> use lcd palor
+	// lcd livingroom init --> use lcd livingroom
 		if (sh1106_init(0, 51, 52)) { // port, A0, reset
 			printf("Error: sh1106 initialization \n");
 			return 0;
 		} else {
-			lcd_display("Polar TV", channel_name, channel_count);
+			lcd_display("Livingroom TV", channel_name, channel_count);
 		}
 	}
 }
 
 int lcd_toilet_init(char *channel_name, char *channel_count) {
-	// lcd palor init
+	// lcd livingroom init
 	int code = sh1106_clear();
 	if (code == 0 || code == 3) {	// OK or NOT_INITIALIZED
 	// lcd toilet init --> use lcd toilet
