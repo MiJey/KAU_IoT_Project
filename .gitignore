@@ -1,0 +1,6 @@
+._main.c
+.cproject
+.project
+.settings/*
+Debug/*
+examples/*
