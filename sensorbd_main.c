@@ -116,8 +116,8 @@ static void ntp_link_error(void) {
 
 //================================ Publish ===================================
 
-char device_id_pub[] = "da037527bf5241888b77b482ce9d0de3";	// mijey cds sensor test
-char device_token_pub[] = "47bd71c382314e07950b0f322422b894";
+char device_id_pub[] = "0e1ba782bd1645c29ddf897e06ca5041";	// IoT TV Following
+char device_token_pub[] = "87d080f5d4954d3ca84cfca40bb53937";
 
 mqtt_client_t* pClientHandle_pub = NULL;
 mqtt_client_config_t clientConfig_pub;
@@ -169,8 +169,8 @@ void initializeConfigUtil_pub(void) {
 
 //================================ Subscribe ===================================
 
-char device_id_sub[] = "efdd0183196e4a5eb906e78edb3d0c4a";	//IoT LED
-char device_token_sub[] = "a84d1ce073614af991ac7fb562b2b06f";
+char device_id_sub[] = "0e1ba782bd1645c29ddf897e06ca5041";	// IoT TV Following
+char device_token_sub[] = "87d080f5d4954d3ca84cfca40bb53937";
 
 char *strTopicMsg_sub;
 char *strTopicAct_sub;
@@ -181,7 +181,7 @@ mqtt_tls_param_t clientTls_sub;
 struct ntpc_server_conn_s g_server_conn_sub[2];
 
 void onMessage(void *client, mqtt_msg_t *msg) {
-	printf("¦£-------------------- Start onMessage --------------------¦¤\n");
+	printf("-------------------- Start onMessage --------------------\n");
 	int i;
 	cJSON *jsonMsg = NULL;
 	char *strActName = NULL;
@@ -280,7 +280,7 @@ void onMessage(void *client, mqtt_msg_t *msg) {
 	free(strActName);
 	free(strParamValue);
 	free(payload);
-	printf("¦¦-------------------- End onMessage --------------------¦¥\n");
+	printf("-------------------- End onMessage --------------------\n");
 }
 
 // Utility function to configure mqtt client
@@ -337,7 +337,7 @@ int sensorbd_main(int argc, FAR char *argv[])
 #endif
 {
 	//-------------------------- Connection -----------------------------
-	printf("¦£-------------------- Start Connection --------------------¦¤\n");
+	printf("-------------------- Start Connection --------------------\n");
 	bool wifiConnected = false;
 	gpio_write(RED_ON_BOARD_LED, 1); // Turn on on board Red LED to indicate no WiFi connection is established
 	int ret;
@@ -397,11 +397,11 @@ int sensorbd_main(int argc, FAR char *argv[])
 	netlib_set_dripv4addr(NET_DEVNAME, &state.default_router);
 
 	printf("IP address  %s\n", inet_ntoa(state.ipaddr));
-	printf("¦¦-------------------- End Connection --------------------¦¥\n");
+	printf("-------------------- End Connection --------------------\n");
 	up_mdelay(1000);
 
 	//-------------------------- Publish -----------------------------
-	printf("¦£-------------------- Start Publish Conn. --------------------¦¤\n");
+	printf("-------------------- Start Publish Conn. --------------------\n");
 	char *strTopicMsg_pub = (char*) malloc(sizeof(char) * 256);
 	char *strTopicAct_pub = (char*) malloc(sizeof(char) * 256);
 	sprintf(strTopicMsg_pub, "/v1.1/messages/%s", device_id_pub);
@@ -435,8 +435,7 @@ int sensorbd_main(int argc, FAR char *argv[])
 	while (mqttConnected == false ) {
 		sleep(2);
 		// Connect mqtt client to server
-		int result = mqtt_connect(pClientHandle_pub, SERVER_ADDR, SERVER_PORT,
-				60);
+		int result = mqtt_connect(pClientHandle_pub, SERVER_ADDR, SERVER_PORT, 60);
 
 		if (result == 0) {
 			mqttConnected = true;
@@ -446,10 +445,10 @@ int sensorbd_main(int argc, FAR char *argv[])
 			continue;
 		}
 	}
-	printf("¦¦-------------------- End Publish Conn. --------------------¦¥\n");
+	printf("-------------------- End Publish Conn. --------------------\n");
 
 	//-------------------------- Subscribe -----------------------------
-	printf("¦£-------------------- Start Subscribe Conn. --------------------¦¤\n");
+	printf("-------------------- Start Subscribe Conn. --------------------\n");
 	mqttConnected = false;
 
 	strTopicMsg_sub = (char*) malloc(sizeof(char) * 256);
@@ -485,8 +484,7 @@ int sensorbd_main(int argc, FAR char *argv[])
 	while (mqttConnected == false ) {
 		sleep(2);
 		// Connect mqtt client to server
-		int result = mqtt_connect(pClientHandle_sub, SERVER_ADDR, SERVER_PORT,
-				60);
+		int result = mqtt_connect(pClientHandle_sub, SERVER_ADDR, SERVER_PORT, 60);
 
 		if (result == 0) {
 			mqttConnected = true;
@@ -510,16 +508,44 @@ int sensorbd_main(int argc, FAR char *argv[])
 		}
 	}
 
-	printf("¦¦-------------------- End Subscribe Conn. --------------------¦¥\n");
+	printf("-------------------- End Subscribe Conn. --------------------\n");
 
 	//-------------------------- Data -----------------------------
-	printf("¦£-------------------- Start Publish Data --------------------¦¤\n");
+	printf("-------------------- Start Publish Data --------------------\n");
 	while (1) {
-		// publish sample data
-		printf("Publish sample data\n");
+
+		// channel name
 		char buf[40];
-		int pub_data = 301;
-		sprintf(buf, "{\"brightness\" : %d}", pub_data);
+		char pub_data_name[] = "qqq";
+		sprintf(buf, "{\"tv_channel_name\" : \"%s\"}", pub_data_name);
+		printf("pub_data_name Value: %s\n", pub_data_name);
+
+		mqtt_msg_t message;
+		message.payload = (char*) buf;
+		message.payload_len = strlen(buf);
+		message.topic = strTopicMsg_pub;
+		message.qos = 0;
+		message.retain = 0;
+
+		ret = mqtt_publish(pClientHandle_pub, message.topic,
+				(char*) message.payload, message.payload_len, message.qos,
+				message.retain);
+
+		if (ret < 0) {
+			printf("Error publishing name\n");
+		} else {
+			printf("Success publishing name\n");
+			break;
+		}
+
+		up_mdelay(100);
+	}
+
+	while(1) {
+		// channel count
+		char buf[40];
+		int pub_data = 548;
+		sprintf(buf, "{\"tv_channel_count\" : %d}", pub_data);
 		printf("Published Value: %d\n", pub_data);
 
 		mqtt_msg_t message;
@@ -534,13 +560,13 @@ int sensorbd_main(int argc, FAR char *argv[])
 				message.retain);
 
 		if (ret < 0) {
-			printf("Error publishing \n");
+			printf("Error publishing count\n");
 		} else {
-			printf("Success publishing \n");
+			printf("Success publishing count\n");
 			break;
 		}
 
 		up_mdelay(100);
 	}
-	printf("¦¦-------------------- End Publish Data --------------------¦¥\n");
+	printf("-------------------- End Publish Data --------------------\n");
 }
