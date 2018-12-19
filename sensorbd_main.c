@@ -16,6 +16,9 @@
 #define RED_ON_BOARD_LED 45
 #define NET_DEVNAME "wl1"
 
+char channel_name[10];
+char channel_count[10];
+
 static const char mqtt_ca_cert_str[] = "-----BEGIN CERTIFICATE-----\r\n"
 		"MIIGrTCCBZWgAwIBAgIQASAP9e8Tbenonqd/EQFJaDANBgkqhkiG9w0BAQsFADBN\r\n"
 		"MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMScwJQYDVQQDEx5E\r\n"
@@ -119,6 +122,9 @@ static void ntp_link_error(void) {
 char device_id_pub[] = "0e1ba782bd1645c29ddf897e06ca5041";	// IoT TV Following
 char device_token_pub[] = "87d080f5d4954d3ca84cfca40bb53937";
 
+char *strTopicMsg_pub;
+char *strTopicAct_pub;
+
 mqtt_client_t* pClientHandle_pub = NULL;
 mqtt_client_config_t clientConfig_pub;
 mqtt_tls_param_t clientTls_pub;
@@ -205,20 +211,61 @@ void onMessage(void *client, mqtt_msg_t *msg) {
 	strActName = cJSON_Print(actName);
 	char *strParamValue = NULL;
 
-	// 5 : palor -> toilet
-	// 6 : toilet -> palor
-	cJSON *param1 = cJSON_GetObjectItem(actParams, "detection_number");	// "detection_number":5
-	strParamValue = cJSON_Print(param1);
-	printf("action name: %s, param value: %s\n", strActName, strParamValue);
+	if (strncmp(strActName, "\"tv_channel_name\"", 17) == 0) {
+		// Channel Name
+		cJSON *param1 = cJSON_GetObjectItem(actParams, "tv_channel_name");// "detection_number":5
+		strParamValue = cJSON_Print(param1);
+		printf("action name: %s, param value: %s\n", strActName, strParamValue);
 
-	if (strncmp(strParamValue, "5", 1) == 0) {	// "detection_number":5 (거실->화장실)
-		printf("palor -> toilet\n");
-		// TV 화면을 거실에서 화장실로 옮김
-		lcd_toilet_init("MBC", "123");
-	} else if (strncmp(strParamValue, "6", 1) == 0) {	// "detection_number":6 (화장실->거실)
-		printf("toilet -> palor\n");
-		// TV 화면을 화장실에서 거실로 옮김
-		lcd_palor_init("MBC", "124");
+		//strcpy(channel_name, strParamValue);
+		channel_name[0] = strParamValue[1];
+		channel_name[1] = strParamValue[2];
+		channel_name[2] = strParamValue[3];
+		channel_name[3] = '\0';
+
+		// sub 받은걸 다시 pub으로 보냄
+		char buf[40];
+		sprintf(buf, "{\"tv_channel_name\" : \"%s\"}", channel_name);
+		printf("pub_data_name Value: %s\n", channel_name);
+
+		mqtt_msg_t message;
+		message.payload = (char*) buf;
+		message.payload_len = 12;
+		message.topic = strTopicMsg_pub;
+		message.qos = 0;
+		message.retain = 0;
+
+		int ret = mqtt_publish(pClientHandle_pub, message.topic,
+				(char*) message.payload, message.payload_len, message.qos,
+				message.retain);
+
+		lcd_channel_name_display(channel_name);
+
+	} else if (strncmp(strActName, "\"tv_channel_count\"", 18) == 0) {
+		// Channel Count
+		cJSON *param1 = cJSON_GetObjectItem(actParams, "tv_channel_count");	// "detection_number":5
+		strParamValue = cJSON_Print(param1);
+		printf("action name: %s, param value: %s\n", strActName, strParamValue);
+
+		strcpy(channel_count, strParamValue);
+		lcd_channel_count_display(strParamValue);
+
+	} else if (strncmp(strActName, "\"detection_number\"", 18) == 0) {
+		// 5 : palor -> toilet
+		// 6 : toilet -> palor
+		cJSON *param1 = cJSON_GetObjectItem(actParams, "detection_number");	// "detection_number":5
+		strParamValue = cJSON_Print(param1);
+		printf("action name: %s, param value: %s\n", strActName, strParamValue);
+
+		if (strncmp(strParamValue, "5", 1) == 0) {// "detection_number":5 (거실->화장실)
+			printf("palor -> toilet\n");
+			// TV 화면을 거실에서 화장실로 옮김
+			lcd_toilet_init(channel_name, channel_count);
+		} else if (strncmp(strParamValue, "6", 1) == 0) {// "detection_number":6 (화장실->거실)
+			printf("toilet -> palor\n");
+			// TV 화면을 화장실에서 거실로 옮김
+			lcd_palor_init(channel_name, channel_count);
+		}
 	}
 
 	cJSON_Delete(jsonMsg);
@@ -347,8 +394,8 @@ int sensorbd_main(int argc, FAR char *argv[])
 
 	//-------------------------- Publish -----------------------------
 	printf("-------------------- Start Publish Conn. --------------------\n");
-	char *strTopicMsg_pub = (char*) malloc(sizeof(char) * 256);
-	char *strTopicAct_pub = (char*) malloc(sizeof(char) * 256);
+	strTopicMsg_pub = (char*) malloc(sizeof(char) * 256);
+	strTopicAct_pub = (char*) malloc(sizeof(char) * 256);
 	sprintf(strTopicMsg_pub, "/v1.1/messages/%s", device_id_pub);
 	sprintf(strTopicAct_pub, "/v1.1/actions/%s", device_token_pub);
 
@@ -380,7 +427,8 @@ int sensorbd_main(int argc, FAR char *argv[])
 	while (mqttConnected == false ) {
 		sleep(2);
 		// Connect mqtt client to server
-		int result = mqtt_connect(pClientHandle_pub, SERVER_ADDR, SERVER_PORT, 60);
+		int result = mqtt_connect(pClientHandle_pub, SERVER_ADDR, SERVER_PORT,
+				60);
 
 		if (result == 0) {
 			mqttConnected = true;
@@ -429,7 +477,8 @@ int sensorbd_main(int argc, FAR char *argv[])
 	while (mqttConnected == false ) {
 		sleep(2);
 		// Connect mqtt client to server
-		int result = mqtt_connect(pClientHandle_sub, SERVER_ADDR, SERVER_PORT, 60);
+		int result = mqtt_connect(pClientHandle_sub, SERVER_ADDR, SERVER_PORT,
+				60);
 
 		if (result == 0) {
 			mqttConnected = true;
@@ -455,64 +504,64 @@ int sensorbd_main(int argc, FAR char *argv[])
 
 	printf("-------------------- End Subscribe Conn. --------------------\n");
 
-	//-------------------------- Data -----------------------------
-	printf("-------------------- Start Publish Data --------------------\n");
-	while (1) {
+	/*
+	 printf("-------------------- Start Publish Data --------------------\n");
+	 while (1) {
 
-		// channel name
-		char buf[40];
-		char pub_data_name[] = "qqq";
-		sprintf(buf, "{\"tv_channel_name\" : \"%s\"}", pub_data_name);
-		printf("pub_data_name Value: %s\n", pub_data_name);
+	 // channel name
+	 char buf[40];
+	 char pub_data_name[] = "qqq";
+	 sprintf(buf, "{\"tv_channel_name\" : \"%s\"}", pub_data_name);
+	 printf("pub_data_name Value: %s\n", pub_data_name);
 
-		mqtt_msg_t message;
-		message.payload = (char*) buf;
-		message.payload_len = strlen(buf);
-		message.topic = strTopicMsg_pub;
-		message.qos = 0;
-		message.retain = 0;
+	 mqtt_msg_t message;
+	 message.payload = (char*) buf;
+	 message.payload_len = strlen(buf);
+	 message.topic = strTopicMsg_pub;
+	 message.qos = 0;
+	 message.retain = 0;
 
-		ret = mqtt_publish(pClientHandle_pub, message.topic,
-				(char*) message.payload, message.payload_len, message.qos,
-				message.retain);
+	 ret = mqtt_publish(pClientHandle_pub, message.topic,
+	 (char*) message.payload, message.payload_len, message.qos,
+	 message.retain);
 
-		if (ret < 0) {
-			printf("Error publishing name\n");
-		} else {
-			printf("Success publishing name\n");
-			break;
-		}
+	 if (ret < 0) {
+	 printf("Error publishing name\n");
+	 } else {
+	 printf("Success publishing name\n");
+	 break;
+	 }
 
-		up_mdelay(100);
-	}
+	 up_mdelay(100);
+	 }
 
-	while(1) {
-		// channel count
-		char buf[40];
-		int pub_data = 548;
-		sprintf(buf, "{\"tv_channel_count\" : %d}", pub_data);
-		printf("Published Value: %d\n", pub_data);
+	 while (1) {
+	 // channel count
+	 char buf[40];
+	 int pub_data = 548;
+	 sprintf(buf, "{\"tv_channel_count\" : %d}", pub_data);
+	 printf("Published Value: %d\n", pub_data);
 
-		mqtt_msg_t message;
-		message.payload = (char*) buf;
-		message.payload_len = strlen(buf);
-		message.topic = strTopicMsg_pub;
-		message.qos = 0;
-		message.retain = 0;
+	 mqtt_msg_t message;
+	 message.payload = (char*) buf;
+	 message.payload_len = strlen(buf);
+	 message.topic = strTopicMsg_pub;
+	 message.qos = 0;
+	 message.retain = 0;
 
-		ret = mqtt_publish(pClientHandle_pub, message.topic,
-				(char*) message.payload, message.payload_len, message.qos,
-				message.retain);
+	 ret = mqtt_publish(pClientHandle_pub, message.topic,
+	 (char*) message.payload, message.payload_len, message.qos,
+	 message.retain);
 
-		if (ret < 0) {
-			printf("Error publishing count\n");
-		} else {
-			printf("Success publishing count\n");
-			break;
-		}
+	 if (ret < 0) {
+	 printf("Error publishing count\n");
+	 } else {
+	 printf("Success publishing count\n");
+	 break;
+	 }
 
-		up_mdelay(100);
-	}
-	printf("-------------------- End Publish Data --------------------\n");
-
+	 up_mdelay(100);
+	 }
+	 printf("-------------------- End Publish Data --------------------\n");
+	 */
 }

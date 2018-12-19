@@ -36,3 +36,11 @@ int lcd_display(char *s0, char *s1, char *s2) {
 	sh1106_write_string(10, 1, s1);
 	sh1106_write_string(10, 2, s2);
 }
+
+int lcd_channel_name_display(char *channel_name) {
+	sh1106_write_string(10, 1, channel_name);
+}
+
+int lcd_channel_count_display(char *channel_count) {
+	sh1106_write_string(10, 2, channel_count);
+}
