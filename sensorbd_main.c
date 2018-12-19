@@ -115,22 +115,22 @@ static void ntp_link_error(void) {
 
 //================================ Publish ===================================
 
-char device_id[] = "da037527bf5241888b77b482ce9d0de3";	// 디바이스 아이디
-char device_token[] = "47bd71c382314e07950b0f322422b894";	// 디바이스 토큰
+char device_id_pub[] = "da037527bf5241888b77b482ce9d0de3";	// 디바이스 아이디
+char device_token_pub[] = "47bd71c382314e07950b0f322422b894";	// 디바이스 토큰
 
-mqtt_client_t* pClientHandle = NULL;
-mqtt_client_config_t clientConfig;
-mqtt_tls_param_t clientTls;
-struct ntpc_server_conn_s g_server_conn[2];
+mqtt_client_t* pClientHandle_pub = NULL;
+mqtt_client_config_t clientConfig_pub;
+mqtt_tls_param_t clientTls_pub;
+struct ntpc_server_conn_s g_server_conn_pub[2];
 
-void initializeConfigUtil(void) {
+void initializeConfigUtil_pub(void) {
 	uint8_t macId[IFHWADDRLEN];
 	int result = netlib_getmacaddr("wl1", macId);
 	if (result < 0) {
 		printf(
 				"Get MAC Address failed. Assigning \
                 Client ID as 123456789");
-		clientConfig.client_id =
+		clientConfig_pub.client_id =
 		DEFAULT_CLIENT_ID; // MAC id Artik 053
 	} else {
 		printf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", ((uint8_t *) macId)[0],
@@ -142,30 +142,94 @@ void initializeConfigUtil(void) {
 				((uint8_t *) macId)[1], ((uint8_t *) macId)[2],
 				((uint8_t *) macId)[3], ((uint8_t *) macId)[4],
 				((uint8_t *) macId)[5]);
-		clientConfig.client_id = buf; // MAC id Artik 053
+		clientConfig_pub.client_id = buf; // MAC id Artik 053
 		printf("Registering mqtt client with id = %s\n", buf);
 	}
 
-	clientConfig.user_name = device_id;
-	clientConfig.password = device_token;
-	clientConfig.debug = true;
-	clientConfig.on_connect = (void*) onConnect;
-	clientConfig.on_disconnect = (void*) onDisconnect;
-	//clientConfig.on_message = (void*) onMessage;
-	clientConfig.on_publish = (void*) onPublish;
+	clientConfig_pub.user_name = device_id_pub;
+	clientConfig_pub.password = device_token_pub;
+	clientConfig_pub.debug = true;
+	clientConfig_pub.on_connect = (void*) onConnect;
+	clientConfig_pub.on_disconnect = (void*) onDisconnect;
+	//clientConfig_pub.on_message = (void*) onMessage;
+	clientConfig_pub.on_publish = (void*) onPublish;
 
-	clientConfig.protocol_version = MQTT_PROTOCOL_VERSION_311;
-	clientConfig.clean_session = true;
+	clientConfig_pub.protocol_version = MQTT_PROTOCOL_VERSION_311;
+	clientConfig_pub.clean_session = true;
 
-	clientTls.ca_cert = get_ca_cert();
-	clientTls.ca_cert_len = sizeof(mqtt_ca_cert_str);
-	clientTls.cert = NULL;
-	clientTls.cert_len = 0;
-	clientTls.key = NULL;
-	clientTls.key_len = 0;
+	clientTls_pub.ca_cert = get_ca_cert();
+	clientTls_pub.ca_cert_len = sizeof(mqtt_ca_cert_str);
+	clientTls_pub.cert = NULL;
+	clientTls_pub.cert_len = 0;
+	clientTls_pub.key = NULL;
+	clientTls_pub.key_len = 0;
 
-	clientConfig.tls = &clientTls;
+	clientConfig_pub.tls = &clientTls_pub;
 }
+
+//================================ Subscribe ===================================
+
+//char *strTopicMsg;
+//char *strTopicAct;
+
+//void onMessage(void *client, mqtt_msg_t *msg) {
+//	int i;
+//	cJSON *jsonMsg = NULL;
+//	char *strActName = NULL;
+//	char *payload = strdup(msg->payload);
+//
+//	printf("Received message\n");
+//    printf("Topic: %s\n", msg->topic);
+//    printf("Message: %s\n", payload);
+//
+//    jsonMsg = cJSON_Parse((const char*)payload);
+//    cJSON *data = cJSON_GetObjectItem(jsonMsg, "actions");
+//
+//    if (data == NULL) {
+//    	printf("data is null\n");
+//    	return;
+//    }
+//
+//    //int dataLength = cJSON_GetArraySize(data);
+//    //printf("array length: %d\n", dataLength);
+//
+//    cJSON *action = cJSON_GetArrayItem(data, 0);
+//    cJSON *actName = cJSON_GetObjectItem(action, "name");
+//
+//    strActName = cJSON_Print(actName);
+//
+//    cJSON_Delete(jsonMsg);
+//    free(strActName);
+//    free(payload);
+//
+//    if (strncmp(strActName, "\"setOn\"", 7) == 0) {
+//    	printf("Turn on lamp\n");
+//    	gpio_write(48, 0);
+//
+//    	mqtt_msg_t message;
+//    	message.payload = (char*)"{\"LED\":true}";
+//    	message.payload_len = 12;
+//    	message.topic = strTopicMsg;
+//    	message.qos = 0;
+//    	message.retain = 0;
+//
+//    	int ret = mqtt_publish(pClientHandle, message.topic, (char*)message.payload, message.payload_len, message.qos, message.retain);
+//    } else if (strncmp(strActName, "\"setOff\"", 8) == 0) {
+//    	printf("Turn off lamp\n");
+//    	gpio_write(48, 1);
+//
+//    	mqtt_msg_t message;
+//    	message.payload = (char*)"{\"LED\":false}";
+//    	message.payload_len = 13;
+//    	message.topic = strTopicMsg;
+//    	message.qos = 0;
+//    	message.retain = 0;
+//
+//    	int ret = mqtt_publish(pClientHandle, message.topic, (char*)message.payload, message.payload_len, message.qos, message.retain);
+//    } else {
+//    	printf("Unrecognized action.\n");
+//    }
+//}
 
 //================================ Main ===================================
 
@@ -178,33 +242,32 @@ int sensorbd_main(int argc, FAR char *argv[])
 	bool wifiConnected = false;
 	gpio_write(RED_ON_BOARD_LED, 1); // Turn on on board Red LED to indicate no WiFi connection is established
 
-	char *strTopicMsg = (char*) malloc(sizeof(char) * 256);
-	char *strTopicAct = (char*) malloc(sizeof(char) * 256);
-	sprintf(strTopicMsg, "/v1.1/messages/%s", device_id);
-	sprintf(strTopicAct, "/v1.1/actions/%s", device_token);
+	char *strTopicMsg_pub = (char*) malloc(sizeof(char) * 256);
+	char *strTopicAct_pub = (char*) malloc(sizeof(char) * 256);
+	sprintf(strTopicMsg_pub, "/v1.1/messages/%s", device_id_pub);
+	sprintf(strTopicAct_pub, "/v1.1/actions/%s", device_token_pub);
 
-	memset(&clientConfig, 0, sizeof(clientConfig));
-	memset(&clientTls, 0, sizeof(clientTls));
+	memset(&clientConfig_pub, 0, sizeof(clientConfig_pub));
+	memset(&clientTls_pub, 0, sizeof(clientTls_pub));
 
 	// for NTP Client
-	memset(&g_server_conn, 0, sizeof(g_server_conn));
-	g_server_conn[0].hostname = "0.asia.pool.ntp.org";
-	g_server_conn[0].port = 123;
-	g_server_conn[1].hostname = "1.asia.pool.ntp.org";
-	g_server_conn[1].port = 123;
+	memset(&g_server_conn_pub, 0, sizeof(g_server_conn_pub));
+	g_server_conn_pub[0].hostname = "0.asia.pool.ntp.org";
+	g_server_conn_pub[0].port = 123;
+	g_server_conn_pub[1].hostname = "1.asia.pool.ntp.org";
+	g_server_conn_pub[1].port = 123;
 
-//#ifdef CONFIG_CTRL_IFACE_FIFO
 	int ret;
 
 	while (!wifiConnected) {
 		ret = mkfifo(CONFIG_WPA_CTRL_FIFO_DEV_REQ,
-				CONFIG_WPA_CTRL_FIFO_MK_MODE);
+		CONFIG_WPA_CTRL_FIFO_MK_MODE);
 		if (ret != 0 && ret != -EEXIST) {
 			printf("mkfifo error for %s: %s", CONFIG_WPA_CTRL_FIFO_DEV_REQ,
 					strerror(errno));
 		}
 		ret = mkfifo(CONFIG_WPA_CTRL_FIFO_DEV_CFM,
-				CONFIG_WPA_CTRL_FIFO_MK_MODE);
+		CONFIG_WPA_CTRL_FIFO_MK_MODE);
 		if (ret != 0 && ret != -EEXIST) {
 			printf("mkfifo error for %s: %s", CONFIG_WPA_CTRL_FIFO_DEV_CFM,
 					strerror(errno));
@@ -215,7 +278,6 @@ int sensorbd_main(int argc, FAR char *argv[])
 			printf("mkfifo error for %s: %s", CONFIG_WPA_MONITOR_FIFO_DEV,
 					strerror(errno));
 		}
-//#endif
 
 		if (start_wifi_interface() == SLSI_STATUS_ERROR) {
 			printf("Connect Wi-Fi failed. Try Again.\n");
@@ -255,17 +317,17 @@ int sensorbd_main(int argc, FAR char *argv[])
 
 	up_mdelay(2000);
 
-	int ret_ntp = ntpc_start(g_server_conn, 2, 1000, ntp_link_error);
+	int ret_ntp = ntpc_start(g_server_conn_pub, 2, 1000, ntp_link_error);
 	printf("ret: %d\n", ret_ntp);
 
 	// Connect to the WiFi network for Internet connectivity
 	printf("mqtt client tutorial\n");
 
 	// Initialize mqtt client
-	initializeConfigUtil();
+	initializeConfigUtil_pub();
 
-	pClientHandle = mqtt_init_client(&clientConfig);
-	if (pClientHandle == NULL) {
+	pClientHandle_pub = mqtt_init_client(&clientConfig_pub);
+	if (pClientHandle_pub == NULL) {
 		printf("mqtt client handle initialization fail\n");
 		return 0;
 	}
@@ -273,7 +335,8 @@ int sensorbd_main(int argc, FAR char *argv[])
 	while (mqttConnected == false ) {
 		sleep(2);
 		// Connect mqtt client to server
-		int result = mqtt_connect(pClientHandle, SERVER_ADDR, SERVER_PORT, 60);
+		int result = mqtt_connect(pClientHandle_pub, SERVER_ADDR, SERVER_PORT,
+				60);
 
 		if (result == 0) {
 			mqttConnected = true;
@@ -288,18 +351,18 @@ int sensorbd_main(int argc, FAR char *argv[])
 		// publish sample data
 		printf("Publish sample data\n");
 		char buf[40];
-		int pub_data = 228;
+		int pub_data = 301;
 		sprintf(buf, "{\"brightness\" : %d}", pub_data);
 		printf("Published Value: %d\n", pub_data);
 
 		mqtt_msg_t message;
 		message.payload = (char*) buf;
 		message.payload_len = strlen(buf);
-		message.topic = strTopicMsg;
+		message.topic = strTopicMsg_pub;
 		message.qos = 0;
 		message.retain = 0;
 
-		ret = mqtt_publish(pClientHandle, message.topic,
+		ret = mqtt_publish(pClientHandle_pub, message.topic,
 				(char*) message.payload, message.payload_len, message.qos,
 				message.retain);
 
