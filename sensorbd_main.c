@@ -169,67 +169,6 @@ void initializeConfigUtil_pub(void) {
 
 //================================ Subscribe ===================================
 
-//char *strTopicMsg;
-//char *strTopicAct;
-
-//void onMessage(void *client, mqtt_msg_t *msg) {
-//	int i;
-//	cJSON *jsonMsg = NULL;
-//	char *strActName = NULL;
-//	char *payload = strdup(msg->payload);
-//
-//	printf("Received message\n");
-//    printf("Topic: %s\n", msg->topic);
-//    printf("Message: %s\n", payload);
-//
-//    jsonMsg = cJSON_Parse((const char*)payload);
-//    cJSON *data = cJSON_GetObjectItem(jsonMsg, "actions");
-//
-//    if (data == NULL) {
-//    	printf("data is null\n");
-//    	return;
-//    }
-//
-//    //int dataLength = cJSON_GetArraySize(data);
-//    //printf("array length: %d\n", dataLength);
-//
-//    cJSON *action = cJSON_GetArrayItem(data, 0);
-//    cJSON *actName = cJSON_GetObjectItem(action, "name");
-//
-//    strActName = cJSON_Print(actName);
-//
-//    cJSON_Delete(jsonMsg);
-//    free(strActName);
-//    free(payload);
-//
-//    if (strncmp(strActName, "\"setOn\"", 7) == 0) {
-//    	printf("Turn on lamp\n");
-//    	gpio_write(48, 0);
-//
-//    	mqtt_msg_t message;
-//    	message.payload = (char*)"{\"LED\":true}";
-//    	message.payload_len = 12;
-//    	message.topic = strTopicMsg;
-//    	message.qos = 0;
-//    	message.retain = 0;
-//
-//    	int ret = mqtt_publish(pClientHandle, message.topic, (char*)message.payload, message.payload_len, message.qos, message.retain);
-//    } else if (strncmp(strActName, "\"setOff\"", 8) == 0) {
-//    	printf("Turn off lamp\n");
-//    	gpio_write(48, 1);
-//
-//    	mqtt_msg_t message;
-//    	message.payload = (char*)"{\"LED\":false}";
-//    	message.payload_len = 13;
-//    	message.topic = strTopicMsg;
-//    	message.qos = 0;
-//    	message.retain = 0;
-//
-//    	int ret = mqtt_publish(pClientHandle, message.topic, (char*)message.payload, message.payload_len, message.qos, message.retain);
-//    } else {
-//    	printf("Unrecognized action.\n");
-//    }
-//}
 
 //================================ Main ===================================
 
@@ -239,24 +178,10 @@ int main(int argc, FAR char *argv[])
 int sensorbd_main(int argc, FAR char *argv[])
 #endif
 {
+	//-------------------------- Connection -----------------------------
+	printf("-------------------- Start Connection --------------------\n");
 	bool wifiConnected = false;
 	gpio_write(RED_ON_BOARD_LED, 1); // Turn on on board Red LED to indicate no WiFi connection is established
-
-	char *strTopicMsg_pub = (char*) malloc(sizeof(char) * 256);
-	char *strTopicAct_pub = (char*) malloc(sizeof(char) * 256);
-	sprintf(strTopicMsg_pub, "/v1.1/messages/%s", device_id_pub);
-	sprintf(strTopicAct_pub, "/v1.1/actions/%s", device_token_pub);
-
-	memset(&clientConfig_pub, 0, sizeof(clientConfig_pub));
-	memset(&clientTls_pub, 0, sizeof(clientTls_pub));
-
-	// for NTP Client
-	memset(&g_server_conn_pub, 0, sizeof(g_server_conn_pub));
-	g_server_conn_pub[0].hostname = "0.asia.pool.ntp.org";
-	g_server_conn_pub[0].port = 123;
-	g_server_conn_pub[1].hostname = "1.asia.pool.ntp.org";
-	g_server_conn_pub[1].port = 123;
-
 	int ret;
 
 	while (!wifiConnected) {
@@ -314,8 +239,25 @@ int sensorbd_main(int argc, FAR char *argv[])
 	netlib_set_dripv4addr(NET_DEVNAME, &state.default_router);
 
 	printf("IP address  %s\n", inet_ntoa(state.ipaddr));
+	printf("-------------------- End Connection --------------------\n");
+	up_mdelay(1000);
 
-	up_mdelay(2000);
+	//-------------------------- Publish -----------------------------
+	printf("-------------------- Start Publish Conn. --------------------\n");
+	char *strTopicMsg_pub = (char*) malloc(sizeof(char) * 256);
+		char *strTopicAct_pub = (char*) malloc(sizeof(char) * 256);
+		sprintf(strTopicMsg_pub, "/v1.1/messages/%s", device_id_pub);
+		sprintf(strTopicAct_pub, "/v1.1/actions/%s", device_token_pub);
+
+		memset(&clientConfig_pub, 0, sizeof(clientConfig_pub));
+		memset(&clientTls_pub, 0, sizeof(clientTls_pub));
+
+		// for NTP Client
+		memset(&g_server_conn_pub, 0, sizeof(g_server_conn_pub));
+		g_server_conn_pub[0].hostname = "0.asia.pool.ntp.org";
+		g_server_conn_pub[0].port = 123;
+		g_server_conn_pub[1].hostname = "1.asia.pool.ntp.org";
+		g_server_conn_pub[1].port = 123;
 
 	int ret_ntp = ntpc_start(g_server_conn_pub, 2, 1000, ntp_link_error);
 	printf("ret: %d\n", ret_ntp);
@@ -346,7 +288,9 @@ int sensorbd_main(int argc, FAR char *argv[])
 			continue;
 		}
 	}
+	printf("-------------------- End Publish Conn. --------------------\n");
 
+	printf("-------------------- Start Publish Data --------------------\n");
 	while (1) {
 		// publish sample data
 		printf("Publish sample data\n");
@@ -375,4 +319,5 @@ int sensorbd_main(int argc, FAR char *argv[])
 
 		up_mdelay(100);
 	}
+	printf("-------------------- End Publish Data --------------------\n");
 }
