@@ -279,6 +279,17 @@ int main(int argc, FAR char *argv[])
 int sensorbd_main(int argc, FAR char *argv[])
 #endif
 {
+
+	int a0 = 53, reset = 54;
+	if(sh1106_init(0, a0, reset)) { // port, A0, reset
+			printf("Error: sh1106 initialization \n");
+			return 0;
+	}
+
+	sh1106_write_string(10 ,0, "Current Room");
+	sh1106_write_string(10 ,1, "Channel Name");
+   	sh1106_write_string(10 ,2, "Channel Count");
+
 	//-------------------------- Connection -----------------------------
 	printf("-------------------- Start Connection --------------------\n");
 	bool wifiConnected = false;
@@ -512,4 +523,5 @@ int sensorbd_main(int argc, FAR char *argv[])
 		up_mdelay(100);
 	}
 	printf("-------------------- End Publish Data --------------------\n");
+
 }
