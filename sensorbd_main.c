@@ -193,88 +193,31 @@ void onMessage(void *client, mqtt_msg_t *msg) {
 
 	jsonMsg = cJSON_Parse((const char*) payload);
 	cJSON *data = cJSON_GetObjectItem(jsonMsg, "actions");
-//     {"actions":
-//     	 [
-//     	 	 {"name":"setOff","parameters":{"led1":false,"led2":true,"led3":true}},
-//     	  	 {"name":"setOn","parameters":{"led1":false,"led2":false,"led3":true}}
-//     	 ]
-//     }
 
 	if (data == NULL) {
 		printf("data is null\n");
 		return;
 	}
 
-	//int dataLength = cJSON_GetArraySize(data);
-	//printf("array length: %d\n", dataLength);
-
-	// {"name":"setOff","parameters":{"led1":false,"led2":true,"led3":true}}
 	cJSON *action = cJSON_GetArrayItem(data, 0);
-	cJSON *actName = cJSON_GetObjectItem(action, "name");	// "name":"setOff"
-	cJSON *actParams = cJSON_GetObjectItem(action, "parameters");// "parameters":{"led1":false,"led2":true,"led3":true}
-	strActName = cJSON_Print(actName);	// "setOff", "setOn"
-	printf("action name: %s\n", strActName);
-
-	// setOn, setOff 상관없이 led1, led2, led3를 파라미터에 따라 on/off 하면 됨
+	cJSON *actName = cJSON_GetObjectItem(action, "name");
+	cJSON *actParams = cJSON_GetObjectItem(action, "parameters");
+	strActName = cJSON_Print(actName);
 	char *strParamValue = NULL;
-//	cJSON *param1 = cJSON_GetObjectItem(actParams, "led1");	// "led1":false
-//	cJSON *param2 = cJSON_GetObjectItem(actParams, "led2");	// "led2":false
-//	cJSON *param3 = cJSON_GetObjectItem(actParams, "led3");	// "led3":false
-//
-//	// led1
-//	strParamValue = cJSON_Print(param1);	// true, false
-//	if (strncmp(strParamValue, "true", 4) == 0) {
-//		gpio_write(51, 1);
-//	} else {
-//		gpio_write(51, 0);
-//	}
-//
-//	// led2
-//	strParamValue = cJSON_Print(param2);	// true, false
-//	if (strncmp(strParamValue, "true", 4) == 0) {
-//		gpio_write(52, 1);
-//	} else {
-//		gpio_write(52, 0);
-//	}
-//
-//	// led3
-//	strParamValue = cJSON_Print(param3);	// true, false
-//	if (strncmp(strParamValue, "true", 4) == 0) {
-//		gpio_write(53, 1);
-//	} else {
-//		gpio_write(53, 0);
-//	}
-//
-//	// setOn이면 54번이 켜지고, setOff이면 55번이 켜지는 코드
-//    if (strncmp(strActName, "\"setOn\"", 7) == 0) {
-//    	printf("Turn on lamp\n");
-//    	gpio_write(54, 1);	//++yeji 1이 켜는거
-//    	gpio_write(55, 0);	//++yeji 1이 켜는거
-//
-//    	mqtt_msg_t message;
-//    	message.payload = (char*)"{\"led\":true}";	//++yeji LED를 led로 바꿈
-//    	message.payload_len = 12;
-//    	message.topic = strTopicMsg;
-//    	message.qos = 0;
-//    	message.retain = 0;
-//
-//    	int ret = mqtt_publish(pClientHandle_sub, message.topic, (char*)message.payload, message.payload_len, message.qos, message.retain);
-//    } else if (strncmp(strActName, "\"setOff\"", 8) == 0) {
-//    	printf("Turn off lamp\n");
-//    	gpio_write(54, 0);	//++yeji 0이 끄는거
-//    	gpio_write(55, 1);	//++yeji 0이 끄는거
-//
-//    	mqtt_msg_t message;
-//    	message.payload = (char*)"{\"led\":false}";	//++yeji LED를 led로 바꿈
-//    	message.payload_len = 13;
-//    	message.topic = strTopicMsg;
-//    	message.qos = 0;
-//    	message.retain = 0;
-//
-//    	int ret = mqtt_publish(pClientHandle_sub, message.topic, (char*)message.payload, message.payload_len, message.qos, message.retain);
-//    } else {
-//    	printf("Unrecognized action.\n");
-//    }
+
+	// 5 : palor -> toilet
+	// 6 : toilet -> palor
+	cJSON *param1 = cJSON_GetObjectItem(actParams, "detection_number");	// "detection_number":5
+	strParamValue = cJSON_Print(param1);
+	printf("action name: %s, param value: %s\n", strActName, strParamValue);
+
+	if (strncmp(strParamValue, "5", 1) == 0) {	// "detection_number":5 (거실->화장실)
+		printf("palor -> toilet\n");
+		// TV 화면을 거실에서 화장실로 옮김
+	} else if (strncmp(strParamValue, "6", 1) == 0) {	// "detection_number":6 (화장실->거실)
+		printf("toilet -> palor\n");
+		// TV 화면을 화장실에서 거실로 옮김
+	}
 
 	cJSON_Delete(jsonMsg);
 	free(strActName);
