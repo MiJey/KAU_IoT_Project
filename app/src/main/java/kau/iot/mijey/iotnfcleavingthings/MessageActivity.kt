@@ -20,6 +20,8 @@ import cloud.artik.model.MessageIDEnvelope
 import cloud.artik.model.NormalizedMessagesEnvelope
 import cloud.artik.model.UserEnvelope
 import kotlinx.android.synthetic.main.activity_message.*
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.IOException
 import java.io.UnsupportedEncodingException
 
@@ -28,6 +30,7 @@ import java.io.UnsupportedEncodingException
  *
  * reference:
  * https://developer.artik.cloud/documentation/tutorials/your-first-android-app.html
+ * https://www.codexpedia.com/android/android-nfc-read-and-write-example/
  */
 
 class MessageActivity : AppCompatActivity() {
@@ -35,6 +38,8 @@ class MessageActivity : AppCompatActivity() {
     private lateinit var mUsersApi: UsersApi
     private lateinit var mMessagesApi: MessagesApi
     private var mAccessToken: String = ""
+    private var havings = JSONArray("[\"my wallet\", \"my car key\", \"my house key\"]")
+    private var resetHavings = "[\"my wallet\", \"my car key\", \"my house key\"]"
 
     // NFC
     private val ERROR_DETECTED = "No NFC tag detected!"
@@ -57,8 +62,11 @@ class MessageActivity : AppCompatActivity() {
 
         setupArtikCloudApi()
         getUserInfo()
+        getLatestMsg()
 
-        send_msg_button.setOnClickListener { postMsg() }
+        //var havingsJson = JSONObject(havings)
+
+        send_msg_button.setOnClickListener { postMsg(resetHavings, true) }
         get_msg_button.setOnClickListener { getLatestMsg() }
 
         /** NFC **/
@@ -75,7 +83,7 @@ class MessageActivity : AppCompatActivity() {
                 e.printStackTrace()
             } catch (e: FormatException) {
                 Toast.makeText(this, WRITE_ERROR, Toast.LENGTH_SHORT).show()
-                e.printStackTrace();
+                e.printStackTrace()
             }
         }
 
@@ -138,7 +146,7 @@ class MessageActivity : AppCompatActivity() {
                     override fun onSuccess(result: NormalizedMessagesEnvelope, i: Int, stringListMap: Map<String, List<String>>) {
                         if (!result.data.isEmpty()) {
                             var mid = result.data[0].mid
-                            var data = result.data[0].data.toString()
+                            var data = result.data[0].data.toString()   // leavings
 
                             updateTextViewOnUIThread(get_msg_response_id_text_view, "id: $mid")
                             updateTextViewOnUIThread(get_msg_response_data_text_view, "data: $data")
@@ -154,10 +162,13 @@ class MessageActivity : AppCompatActivity() {
         }
     }
 
-    private fun postMsg(nfcTag: String = "nothing", doGetLastMsg: Boolean = false) {
+    private fun postMsg(nfcTag: String = resetHavings, doGetLastMsg: Boolean = false) {
         val msg = Message()
         msg.sdid = ArtikConfig.DEVICE_ID
-        msg.data["things"] = nfcTag
+        msg.data["leavings"] = nfcTag
+
+        if (nfcTag == resetHavings)
+            havings = JSONArray(resetHavings)
 
         try {
             mMessagesApi.sendMessageAsync(msg, object : ApiCallback<MessageIDEnvelope> {
@@ -226,8 +237,22 @@ class MessageActivity : AppCompatActivity() {
         }
 
         // NFC 태그를 읽으면 Artik Cloud로 보내고 받아옴
-        nfc_read_text_view.text = "NFC Content: $text"
-        postMsg(text, true)
+        var i = 0
+        while(true) {
+            if (i >= havings.length())
+                break
+            var hv = havings.getString(i)
+            Log.d("NFCTest", "hv: $hv, text: $text")
+
+            if (hv == text) {
+                havings.remove(i)
+            } else {
+                i += 1
+            }
+        }
+        nfc_read_text_view.text = "NFC Content: $text\nHavings: ${havings.toString()}"
+
+        postMsg(havings.toString(), true)
     }
 
     /** Write to NFC tag **/

@@ -10,7 +10,7 @@ package kau.iot.mijey.iotnfcleavingthings
 class ArtikConfig {
     companion object {
         const val CLIENT_ID = "ff3bddf628b5411f96cc556ae2def6f3" // AKA application ID
-        const val DEVICE_ID = "2830627e7d9e4f279fda7edafca644a6"
+        const val DEVICE_ID = "bc9379eecd7043eca7048dca4d2f8525"
 
         // MUST be consistent with "AUTH REDIRECT URL" of your application set up at the developer.artik.cloud
         // Artik Cloud - Applications - App Info 맨 밑에 AUTH REDIRECT URL 입력하는 칸이 있음
