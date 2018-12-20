@@ -118,9 +118,9 @@ static void ntp_link_error(void) {
 }
 
 //================================ Publish ===================================
-/*
-char device_id_pub[] = "0e1ba782bd1645c29ddf897e06ca5041";	// IoT TV Following
-char device_token_pub[] = "87d080f5d4954d3ca84cfca40bb53937";
+
+char device_id_pub[] = "bc9379eecd7043eca7048dca4d2f8525"; // IoT Leaving Things
+char device_token_pub[] = "832e462e02a746309fd45fb44630fd0c";
 
 char *strTopicMsg_pub;
 char *strTopicAct_pub;
@@ -129,6 +129,38 @@ mqtt_client_t* pClientHandle_pub = NULL;
 mqtt_client_config_t clientConfig_pub;
 mqtt_tls_param_t clientTls_pub;
 struct ntpc_server_conn_s g_server_conn_pub[2];
+
+void onMessage_nfc(void *client, mqtt_msg_t *msg) {
+	printf("-------------------- Start onMessage --------------------\n");
+	int i;
+	cJSON *jsonMsg = NULL;
+	char *strActName = NULL;
+	char *payload = strdup(msg->payload);
+
+	printf("Received message\n");
+	printf("Topic: %s\n", msg->topic);
+	printf("Message: %s\n", payload);
+
+	jsonMsg = cJSON_Parse((const char*) payload);
+	cJSON *data = cJSON_GetObjectItem(jsonMsg, "actions");
+
+	if (data == NULL) {
+		printf("data is null\n");
+		return;
+	}
+
+	cJSON *action = cJSON_GetArrayItem(data, 0);
+	cJSON *actName = cJSON_GetObjectItem(action, "name");
+	cJSON *actParams = cJSON_GetObjectItem(action, "parameters");
+	strActName = cJSON_Print(actName);
+	char *strParamValue = NULL;
+
+	cJSON_Delete(jsonMsg);
+	free(strActName);
+	free(strParamValue);
+	free(payload);
+	printf("-------------------- End onMessage --------------------\n");
+}
 
 void initializeConfigUtil_pub(void) {
 	uint8_t macId[IFHWADDRLEN];
@@ -158,6 +190,7 @@ void initializeConfigUtil_pub(void) {
 	clientConfig_pub.debug = true;
 	clientConfig_pub.on_connect = (void*) onConnect;
 	clientConfig_pub.on_disconnect = (void*) onDisconnect;
+	clientConfig_pub.on_message = (void*) onMessage_nfc;
 	clientConfig_pub.on_publish = (void*) onPublish;
 
 	clientConfig_pub.protocol_version = MQTT_PROTOCOL_VERSION_311;
@@ -172,7 +205,6 @@ void initializeConfigUtil_pub(void) {
 
 	clientConfig_pub.tls = &clientTls_pub;
 }
-*/
 
 //================================ Subscribe ===================================
 
@@ -242,14 +274,55 @@ void onMessage(void *client, mqtt_msg_t *msg) {
 		strParamValue = cJSON_Print(param1);
 		printf("action name: %s, param value: %s\n", strActName, strParamValue);
 
-		if (strncmp(strParamValue, "5", 1) == 0) {// "detection_number":5
+		if (strncmp(strParamValue, "13", 2) == 0	// 거실-화장실 사람x
+			|| strncmp(strParamValue, "14", 2) == 0) {// 거실-화장실 사람o
 			printf("livingroom -> toilet\n");
 			// TV 거실에서 화장실로 감
 			lcd_toilet_init(channel_name, channel_count);
-		} else if (strncmp(strParamValue, "6", 1) == 0) {// "detection_number":6
+		} else if (strncmp(strParamValue, "5", 1) == 0	// 현관-거실 사람x
+				|| strncmp(strParamValue, "6", 1) == 0	// 현관-거실 사람o
+				|| strncmp(strParamValue, "11", 2) == 0	// 방-거실 사람x
+				|| strncmp(strParamValue, "12", 2) == 0	// 방-거실 사람o
+				|| strncmp(strParamValue, "15", 2) == 0	// 화장실-거실 사람x
+				|| strncmp(strParamValue, "16", 2) == 0) {// 화장실-거실 사람o
 			printf("toilet -> livingroom\n");
+			// 거실 입장
 			// TV 화장실에서 거실로 감
 			lcd_livingroom_init(channel_name, channel_count);
+		}
+	}
+
+	else if (strncmp(strActName, "\"leavings\"", 10) == 0) {
+		cJSON *param1 = cJSON_GetObjectItem(actParams, "leavings");
+		strParamValue = cJSON_Print(param1);
+		printf("leavings action name: %s, param value: %s\n", strActName,
+				strParamValue);
+
+		char s1[10], s2[10], s3[10];
+		int i = 0;
+		while (1) {
+			i++;
+			if (strParamValue[i] == '\0')
+				break;
+		}
+		printf("length: %d\n", i);
+
+		if (i == 51) {
+			lcd_door_init("Don't Forget!", "wallet", "car key", "house key");
+		} else if (i == 32) {
+			lcd_door_init("Don't Forget!", "wallet", "car key", "");
+		} else if (i == 34) {
+			lcd_door_init("Don't Forget!", "wallet", "house key", "");
+		} else if (i == 35) {
+			lcd_door_init("Don't Forget!", "house key", "car key", "");
+		} else if (i == 18) {
+			lcd_door_init("Don't Forget!", "car key", "", "");
+		} else if (i == 17) {
+			lcd_door_init("Don't Forget!", "wallet", "", "");
+		} else if (i == 20) {
+			lcd_door_init("Don't Forget!", "house key", "", "");
+		} else {
+			lcd_door_init("Bye~Bye~", "", "", "");
 		}
 	}
 
@@ -313,7 +386,7 @@ int main(int argc, FAR char *argv[])
 int sensorbd_main(int argc, FAR char *argv[])
 #endif
 {
-	//-------------------------- Connection -----------------------------
+//-------------------------- Connection -----------------------------
 	printf("-------------------- Start Connection --------------------\n");
 	bool wifiConnected = false;
 	gpio_write(RED_ON_BOARD_LED, 1); // Turn on on board Red LED to indicate no WiFi connection is established
@@ -377,8 +450,7 @@ int sensorbd_main(int argc, FAR char *argv[])
 	printf("-------------------- End Connection --------------------\n");
 	up_mdelay(1000);
 
-	/*
-	//-------------------------- Publish -----------------------------
+//-------------------------- Publish -----------------------------
 	printf("-------------------- Start Publish Conn. --------------------\n");
 	strTopicMsg_pub = (char*) malloc(sizeof(char) * 256);
 	strTopicAct_pub = (char*) malloc(sizeof(char) * 256);
@@ -388,7 +460,7 @@ int sensorbd_main(int argc, FAR char *argv[])
 	memset(&clientConfig_pub, 0, sizeof(clientConfig_pub));
 	memset(&clientTls_pub, 0, sizeof(clientTls_pub));
 
-	// for NTP Client
+// for NTP Client
 	memset(&g_server_conn_pub, 0, sizeof(g_server_conn_pub));
 	g_server_conn_pub[0].hostname = "0.asia.pool.ntp.org";
 	g_server_conn_pub[0].port = 123;
@@ -398,10 +470,10 @@ int sensorbd_main(int argc, FAR char *argv[])
 	int ret_ntp_pub = ntpc_start(g_server_conn_pub, 2, 1000, ntp_link_error);
 	printf("pub ret: %d\n", ret_ntp_pub);
 
-	// Connect to the WiFi network for Internet connectivity
+// Connect to the WiFi network for Internet connectivity
 	printf("mqtt client tutorial\n");
 
-	// Initialize mqtt client
+// Initialize mqtt client
 	initializeConfigUtil_pub();
 
 	pClientHandle_pub = mqtt_init_client(&clientConfig_pub);
@@ -425,9 +497,8 @@ int sensorbd_main(int argc, FAR char *argv[])
 		}
 	}
 	printf("-------------------- End Publish Conn. --------------------\n");
-*/
 
-	//-------------------------- Subscribe -----------------------------
+//-------------------------- Subscribe -----------------------------
 	printf("-------------------- Start Subscribe Conn. --------------------\n");
 	mqttConnected = false;
 
@@ -439,7 +510,7 @@ int sensorbd_main(int argc, FAR char *argv[])
 	memset(&clientConfig_sub, 0, sizeof(clientConfig_sub));
 	memset(&clientTls_sub, 0, sizeof(clientTls_sub));
 
-	// for NTP Client
+// for NTP Client
 	memset(&g_server_conn_sub, 0, sizeof(g_server_conn_sub));
 	g_server_conn_sub[0].hostname = "0.asia.pool.ntp.org";
 	g_server_conn_sub[0].port = 123;
@@ -449,10 +520,10 @@ int sensorbd_main(int argc, FAR char *argv[])
 	int ret_ntp_sub = ntpc_start(g_server_conn_sub, 2, 1000, ntp_link_error);
 	printf("sub ret: %d\n", ret_ntp_sub);
 
-	// Connect to the WiFi network for Internet connectivity
+// Connect to the WiFi network for Internet connectivity
 	printf("mqtt client tutorial\n");
 
-	// Initialize mqtt client
+// Initialize mqtt client
 	initializeConfigUtil_sub();
 
 	pClientHandle_sub = mqtt_init_client(&clientConfig_sub);
@@ -476,7 +547,7 @@ int sensorbd_main(int argc, FAR char *argv[])
 		}
 	}
 
-	// Subscribe to topic of interest
+// Subscribe to topic of interest
 	while (1) {
 		sleep(2);
 		int result = mqtt_subscribe(pClientHandle_sub, strTopicAct_sub, 0); //topic - color, QOS - 0
@@ -485,6 +556,18 @@ int sensorbd_main(int argc, FAR char *argv[])
 			continue;
 		} else {
 			printf("mqtt client Subscribed to the topic successfully\n");
+			break;
+		}
+	}
+
+	while (1) {
+		sleep(2);
+		int result = mqtt_subscribe(pClientHandle_pub, strTopicAct_pub, 0); //topic - color, QOS - 0
+		if (result < 0) {
+			printf("mqtt client subscribe to topic nfc failed\n");
+			continue;
+		} else {
+			printf("mqtt client Subscribed to the topic nfc successfully\n");
 			break;
 		}
 	}

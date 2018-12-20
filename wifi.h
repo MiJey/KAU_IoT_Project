@@ -8,7 +8,7 @@
 #define SLSI_WIFI_SECURITY_OPEN     "open"
 #define SLSI_WIFI_SECURITY_WPA2_AES "wpa2_aes"
 
-#define SSID "KAU-Guest"
+#define SSID "YG"
 #define PSK  NULL
 
 slsi_security_config_t *getSecurityConfig(char *sec_type,

@@ -31,6 +31,22 @@ int lcd_toilet_init(char *channel_name, char *channel_count) {
 	}
 }
 
+int lcd_door_init(char *s0, char *s1, char *s2, char *s3) {
+	int code = sh1106_clear();
+	if (code == 0 || code == 3) {	// OK or NOT_INITIALIZED
+	// lcd toilet init --> use lcd toilet
+		if (sh1106_init(0, 58, 59)) { // port, A0, reset
+			printf("Error: sh1106 initialization \n");
+			return 0;
+		} else {
+			sh1106_write_string(10, 0, s0);
+			sh1106_write_string(10, 1, s1);
+			sh1106_write_string(10, 2, s2);
+			sh1106_write_string(10, 3, s3);
+		}
+	}
+}
+
 int lcd_display(char *s0, char *s1, char *s2) {
 	sh1106_write_string(10, 0, s0);
 	sh1106_write_string(10, 1, s1);
