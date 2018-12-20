@@ -118,7 +118,7 @@ static void ntp_link_error(void) {
 }
 
 //================================ Publish ===================================
-
+/*
 char device_id_pub[] = "0e1ba782bd1645c29ddf897e06ca5041";	// IoT TV Following
 char device_token_pub[] = "87d080f5d4954d3ca84cfca40bb53937";
 
@@ -172,6 +172,7 @@ void initializeConfigUtil_pub(void) {
 
 	clientConfig_pub.tls = &clientTls_pub;
 }
+*/
 
 //================================ Subscribe ===================================
 
@@ -376,6 +377,7 @@ int sensorbd_main(int argc, FAR char *argv[])
 	printf("-------------------- End Connection --------------------\n");
 	up_mdelay(1000);
 
+	/*
 	//-------------------------- Publish -----------------------------
 	printf("-------------------- Start Publish Conn. --------------------\n");
 	strTopicMsg_pub = (char*) malloc(sizeof(char) * 256);
@@ -423,6 +425,7 @@ int sensorbd_main(int argc, FAR char *argv[])
 		}
 	}
 	printf("-------------------- End Publish Conn. --------------------\n");
+*/
 
 	//-------------------------- Subscribe -----------------------------
 	printf("-------------------- Start Subscribe Conn. --------------------\n");
